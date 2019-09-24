@@ -1,6 +1,7 @@
 //
-//modified by:
-//date:
+//modified by: Fahad alqahtani
+// gruop: rayan alsabr
+//date: Sep .13.2019
 //
 //3350 Spring 2019 Lab-1
 //This program demonstrates the use of OpenGL and XWindows
@@ -39,8 +40,9 @@ using namespace std;
 #include <X11/Xlib.h>
 #include <X11/keysym.h>
 #include <GL/glx.h>
+#include "fonts.h"
 
-const int MAX_PARTICLES = 200;
+const int MAX_PARTICLES = 20000;
 const float GRAVITY     = 0.1;
 
 //some structures
@@ -63,9 +65,10 @@ struct Particle {
 class Global {
 public:
 	int xres, yres;
-	Shape box;
+	Shape box[5];
 	Particle particle[MAX_PARTICLES];
 	int n;
+    int count=10;
 	Global();
 } g;
 
@@ -123,11 +126,14 @@ Global::Global()
 	xres = 800;
 	yres = 600;
 	//define a box shape
-	box.width = 100;
-	box.height = 10;
-	box.center.x = 120 + 5*65;
-	box.center.y = 500 - 5*60;
-	n = 0;
+    for(int i =0 ;i<5; i++){
+	box[i].width = 100;
+	box[i].height = 20;
+	box[i].center.x = 120 + 5*65-i*100;
+	box[i].center.y = 500 - 5*60+i*80;
+    }
+    n = 0;
+
 }
 
 //-----------------------------------------------------------------------------
@@ -207,6 +213,8 @@ void init_opengl(void)
 	glOrtho(0, g.xres, 0, g.yres, -1, 1);
 	//Set the screen background color
 	glClearColor(0.1, 0.1, 0.1, 1.0);
+    glEnable(GL_TEXTURE_2D);
+    initialize_fonts();
 }
 
 void makeParticle(int x, int y)
@@ -242,7 +250,7 @@ void check_mouse(XEvent *e)
 		return;
 	}
 	if (e->type == ButtonPress) {
-		if (e->xbutton.button==1) {
+		if (e->xbutton.button==40) {
 			//Left button was pressed.
 
 			int y = g.yres - e->xbutton.y;
@@ -251,7 +259,7 @@ void check_mouse(XEvent *e)
 			makeParticle(e->xbutton.x, y);
 			return;
 		}
-		if (e->xbutton.button==3) {
+		if (e->xbutton.button==30) {
 			//Right button was pressed.
 			return;
 		}
@@ -301,25 +309,21 @@ void movement()
 	p->s.center.y += p->velocity.y;
         p->velocity.y  -= GRAVITY;
 	//check for collision with shapes...
-	Shape *s= &g.box;
+    for( int j=0; j<5 ; j++){
+	Shape *s= &g.box[j];
 
         if (p->s.center.y < s->center.y + s-> height && 
-		p->s.center.x > s->center.x - s->width &&
-	        p->s.center.x < s->center.x + s->width  )
+     		p->s.center.x > s->center.x - s->width &&
+	        p->s.center.x < s->center.x + s->width)  
+           {
 	        p->velocity.y = -(p->velocity.y * 0.8); 
-
-
-//	box.width = 100;
-  //      box.height = 10;
-    //    box.center.x = 120 + 5*65;
-      //  box.center.y = 500 - 5*60;
+    }}
 
 
 
 	//check for off-screen
 	
     if (p->s.center.y < 0.0) {
-		//cout << "off screen" << endl;
 	
            g.particle[i] = g.particle[g.n-1];
 	--g.n;
@@ -334,10 +338,11 @@ void render()
 	//draw the box
 	Shape *s;
 	glColor3ub(90,140,90);
-	s = &g.box;
+	float w,h;
+    for( int i = 0; i < 5; i++){
+    s = &g.box[i];
 	glPushMatrix();
 	glTranslatef(s->center.x, s->center.y, s->center.z);
-	float w, h;
 	w = s->width;
 	h = s->height;
 	glBegin(GL_QUADS);
@@ -347,14 +352,17 @@ void render()
 		glVertex2i( w, -h);
 	glEnd();
 	glPopMatrix();
+    }
 	//
 	//Draw particles here
 	//if (g.n > 0) 
-       for( int i=0; i< g.n; i++) 	{
+       
 		//There is at least one particle to draw.
 		glPushMatrix();
 		glColor3ub(150,160,220);
-		Vec *c = &g.particle[i].s.center;
+		for( int i = 0; i<g.n ; i++){
+        Vec *c = &g.particle[i].s.center;
+        
 		w = h = 2;
 		glBegin(GL_QUADS);
 			glVertex2i(c->x-w, c->y-h);
@@ -364,6 +372,17 @@ void render()
 		glEnd();
 		glPopMatrix();
 	}
+        Rect r;
+        r.center=0;
+   unsigned int c = 0x00ffff12;
+   const char * text[]= {"Maintenance", "Verification","Implementation","Design","Requirement"};   
+          
+              for(int i = 0; i < 5 ; i++){
+              r.left = g.box[i].center.x-i*4.5-20;
+              r.bot  = g.box[i].center.y-5;
+              ggprint8b(&r, 16, c, text[i]);
+              }
+              
 	//
 	//Draw your 2D text here
 
